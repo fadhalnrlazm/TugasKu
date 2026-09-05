@@ -1,30 +1,30 @@
 /**
- * TugasKu - Manajemen List Tugas Kuliah
- * Logika CRUD Sederhana, Elegan, dan Responsif.
+ * TugasKu - Manajemen List Tugas Kuliah (Shared Realtime with Firebase Firestore)
+ * Terhubung langsung ke Cloud Firestore agar tersinkronisasi di semua perangkat (Laptop, HP teman, dll.)
  */
 
-const STORAGE_KEY = 'tugasku_assignment_tracker_v2';
-const THEME_KEY = 'tugasku_theme';
+// Konfigurasi Firebase Anda
+const firebaseConfig = {
+  apiKey: "AIzaSyC4R48gSXTBvbUl84I8Ror5YSu_4t2D_TI",
+  authDomain: "tugasku-550b1.firebaseapp.com",
+  projectId: "tugasku-550b1",
+  storageBucket: "tugasku-550b1.firebasestorage.app",
+  messagingSenderId: "134651668436",
+  appId: "1:134651668436:web:ae0eac1217efabee689841",
+  measurementId: "G-89FWB03ZCD"
+};
 
-// Data Awal Contoh (Hanya jika penyimpanan lokal masih kosong)
-const INITIAL_TASKS = [
-  {
-    id: 'task-demo-1',
-    title: 'Membuat Makalah Analisis Kebutuhan Sistem ERP',
-    course: 'Analisis & Perancangan Sistem',
-    deadline: getFutureDateOffset(1, 23, 59), // Besok malam
-    notes: 'Kumpulkan dalam format PDF ke e-learning. Minimal 15 halaman.',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
-  },
-  {
-    id: 'task-demo-2',
-    title: 'Implementasi Fitur CRUD & Dokumentasi API',
-    course: 'Pemrograman Web Lanjut',
-    deadline: getFutureDateOffset(3, 15, 0), // 3 hari lagi
-    notes: 'Unggah ke GitHub dan sertakan link pada lembar pengumpulan.',
-    createdAt: new Date(Date.now() - 43200000).toISOString()
-  }
-];
+// Inisialisasi Firebase & Firestore
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Aktifkan offline persistence agar web tetap cepat dan bisa dibuka saat jaringan lambat
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {
+  // Abaikan jika browser tidak mendukung multi-tab persistence
+});
+
+const tasksCollection = db.collection('tasks');
+const THEME_KEY = 'tugasku_theme';
 
 // Helper: Menghasilkan ISO string tanggal masa depan
 function getFutureDateOffset(daysOffset, hours = 23, minutes = 59) {
@@ -53,6 +53,10 @@ const taskListEl = document.getElementById('taskList');
 const emptyStateEl = document.getElementById('emptyState');
 const taskCountBadge = document.getElementById('taskCountBadge');
 
+// Cloud Status Elements
+const cloudStatus = document.getElementById('cloudStatus');
+const statusText = document.getElementById('statusText');
+
 // Stats Elements
 const statTotalEl = document.getElementById('statTotal');
 const statUrgentEl = document.getElementById('statUrgent');
@@ -63,6 +67,7 @@ const statCards = document.querySelectorAll('.stat-card');
 const taskModal = document.getElementById('taskModal');
 const taskForm = document.getElementById('taskForm');
 const modalTitle = document.getElementById('modalTitle');
+const saveBtn = document.getElementById('saveTaskBtn');
 const saveBtnText = document.getElementById('saveBtnText');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const cancelModalBtn = document.getElementById('cancelModalBtn');
@@ -90,38 +95,65 @@ const themeToggleBtn = document.getElementById('themeToggleBtn');
 const toastContainer = document.getElementById('toastContainer');
 
 // ==========================================================================
-// Inisialisasi & Event Listeners
+// Inisialisasi & Real-Time Cloud Listener
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  loadTasks();
   attachEventListeners();
-  render();
+  subscribeToCloudTasks();
 });
 
-function loadTasks() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      tasks = JSON.parse(saved);
-    } catch (e) {
-      tasks = [...INITIAL_TASKS];
-      saveTasks();
+// Langganan Realtime ke Firestore (Tugas otomatis sinkron di semua HP/Laptop)
+function subscribeToCloudTasks() {
+  if (statusText) statusText.textContent = 'Menghubungkan ke Cloud...';
+
+  tasksCollection.onSnapshot(
+    (snapshot) => {
+      tasks = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        let createdAtStr = new Date().toISOString();
+        if (data.createdAt) {
+          createdAtStr = data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt;
+        }
+
+        tasks.push({
+          id: doc.id,
+          title: data.title || '',
+          course: data.course || '',
+          deadline: data.deadline || '',
+          notes: data.notes || '',
+          createdAt: createdAtStr
+        });
+      });
+
+      if (cloudStatus && statusText) {
+        cloudStatus.classList.remove('offline');
+        statusText.textContent = 'Sinkronisasi Cloud Aktif';
+      }
+
+      render();
+    },
+    (error) => {
+      console.error('Firestore snapshot error:', error);
+      if (cloudStatus && statusText) {
+        cloudStatus.classList.add('offline');
+        statusText.textContent = 'Koneksi Terputus';
+      }
+      
+      if (error.code === 'permission-denied') {
+        showToast('Akses ditolak! Pastikan aturan Rules di Firestore sudah diset: allow read, write: if true;', 'danger');
+      } else {
+        showToast('Gagal memuat tugas dari cloud: ' + error.message, 'danger');
+      }
     }
-  } else {
-    tasks = [...INITIAL_TASKS];
-    saveTasks();
-  }
+  );
 }
 
-function saveTasks() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  } catch (e) {
-    showToast('Gagal menyimpan ke penyimpanan lokal', 'danger');
-  }
-}
+// ==========================================================================
+// Theme Management
+// ==========================================================================
 
 function initTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
@@ -144,6 +176,10 @@ function toggleTheme() {
   setTheme(target);
   showToast(`Mode ${target === 'dark' ? 'Gelap' : 'Terang'} aktif`, 'info');
 }
+
+// ==========================================================================
+// Event Listeners
+// ==========================================================================
 
 function attachEventListeners() {
   // Ganti Tema
@@ -175,7 +211,7 @@ function attachEventListeners() {
     card.addEventListener('click', () => {
       const filter = card.dataset.filter;
       if (activeFilter === filter) {
-        activeFilter = 'all'; // Toggle back to all
+        activeFilter = 'all';
       } else {
         activeFilter = filter;
       }
@@ -214,10 +250,10 @@ function attachEventListeners() {
 }
 
 // ==========================================================================
-// CRUD Operasi
+// Operasi CRUD Cloud (Firestore)
 // ==========================================================================
 
-function handleTaskFormSubmit(e) {
+async function handleTaskFormSubmit(e) {
   e.preventDefault();
 
   const id = taskIdInput.value;
@@ -231,38 +267,44 @@ function handleTaskFormSubmit(e) {
     return;
   }
 
-  if (id) {
-    // EDIT TUGAS
-    const index = tasks.findIndex(t => t.id === id);
-    if (index !== -1) {
-      tasks[index] = {
-        ...tasks[index],
+  saveBtn.disabled = true;
+  saveBtnText.textContent = 'Menyimpan...';
+
+  try {
+    if (id) {
+      // EDIT TUGAS DI CLOUD
+      await tasksCollection.doc(id).update({
         title,
         course,
         deadline,
         notes,
-        updatedAt: new Date().toISOString()
-      };
-      saveTasks();
-      showToast('Tugas berhasil diperbarui!', 'success');
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Tugas berhasil diperbarui di Cloud!', 'success');
+    } else {
+      // TAMBAH TUGAS BARU KE CLOUD
+      await tasksCollection.add({
+        title,
+        course,
+        deadline,
+        notes,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Tugas baru tersinkron ke semua perangkat!', 'success');
     }
-  } else {
-    // TAMBAH TUGAS
-    const newTask = {
-      id: 'task-' + Date.now(),
-      title,
-      course,
-      deadline,
-      notes,
-      createdAt: new Date().toISOString()
-    };
-    tasks.unshift(newTask);
-    saveTasks();
-    showToast('Tugas baru berhasil ditambahkan!', 'success');
-  }
 
-  closeModal();
-  render();
+    closeModal();
+  } catch (error) {
+    console.error('Error saat menyimpan tugas:', error);
+    if (error.code === 'permission-denied') {
+      showToast('Gagal: Izin ditolak! Periksa tab Rules di Firebase Console Anda.', 'danger');
+    } else {
+      showToast('Gagal menyimpan: ' + error.message, 'danger');
+    }
+  } finally {
+    saveBtn.disabled = false;
+    saveBtnText.textContent = id ? 'Simpan Perubahan' : 'Simpan Tugas';
+  }
 }
 
 function openModal(taskToEdit = null) {
@@ -299,7 +341,7 @@ function requestDeleteTask(taskId) {
   if (!task) return;
 
   taskToDeleteId = taskId;
-  deleteConfirmText.textContent = `Hapus tugas "${task.title}"?`;
+  deleteConfirmText.textContent = `Hapus tugas "${task.title}"? Tugas ini akan terhapus dari semua perangkat.`;
   deleteConfirmModal.classList.remove('hidden');
   deleteConfirmModal.setAttribute('aria-hidden', 'false');
 }
@@ -310,14 +352,23 @@ function closeDeleteModal() {
   taskToDeleteId = null;
 }
 
-function executeDeleteTask() {
+async function executeDeleteTask() {
   if (!taskToDeleteId) return;
 
-  tasks = tasks.filter(t => t.id !== taskToDeleteId);
-  saveTasks();
-  closeDeleteModal();
-  showToast('Tugas telah dihapus.', 'info');
-  render();
+  confirmDeleteBtn.disabled = true;
+  confirmDeleteBtn.textContent = 'Menghapus...';
+
+  try {
+    await tasksCollection.doc(taskToDeleteId).delete();
+    showToast('Tugas telah dihapus dari cloud.', 'info');
+    closeDeleteModal();
+  } catch (error) {
+    console.error('Error saat menghapus tugas:', error);
+    showToast('Gagal menghapus tugas: ' + error.message, 'danger');
+  } finally {
+    confirmDeleteBtn.disabled = false;
+    confirmDeleteBtn.textContent = 'Hapus Tugas';
+  }
 }
 
 // ==========================================================================
@@ -345,7 +396,7 @@ function render() {
     // Filter Stat Card
     if (activeFilter === 'urgent') {
       const diffHours = (new Date(task.deadline) - now) / (1000 * 60 * 60);
-      return diffHours <= 24; // Mendesak jika <= 24 jam atau terlewat
+      return diffHours <= 24;
     } else if (activeFilter === 'upcoming') {
       const diffHours = (new Date(task.deadline) - now) / (1000 * 60 * 60);
       return diffHours > 24;
@@ -384,8 +435,8 @@ function render() {
       emptyTitle.textContent = 'Bebas Hambatan!';
       emptySubtitle.textContent = 'Tidak ada tugas yang mendekati deadline mendesak saat ini.';
     } else {
-      emptyTitle.textContent = 'Semua Tugas Beres!';
-      emptySubtitle.textContent = 'Tidak ada daftar tugas yang tertunda. Nikmati waktu santaimu!';
+      emptyTitle.textContent = 'Belum Ada Tugas di Cloud';
+      emptySubtitle.textContent = 'Mulai tambahkan tugas kuliah pertama untuk dibagikan dengan teman-teman!';
     }
   } else {
     emptyStateEl.classList.add('hidden');
@@ -444,7 +495,7 @@ function createTaskCardElement(task) {
     ${task.notes ? `<div class="card-notes">${escapeHTML(task.notes)}</div>` : ''}
   `;
 
-  // Attach Listeners
+  // Event Listeners
   const editBtn = card.querySelector('.edit-btn');
   editBtn.addEventListener('click', () => openModal(task));
 
@@ -460,7 +511,7 @@ function updateStats() {
 
   const urgent = tasks.filter(t => {
     const diffHours = (new Date(t.deadline) - now) / (1000 * 60 * 60);
-    return diffHours <= 24; // <= 24 jam atau sudah lewat
+    return diffHours <= 24;
   }).length;
 
   const upcoming = total - urgent;
@@ -544,5 +595,5 @@ function showToast(message, type = 'info') {
   setTimeout(() => {
     toast.classList.add('toast-hiding');
     setTimeout(() => toast.remove(), 250);
-  }, 2800);
+  }, 3200);
 }

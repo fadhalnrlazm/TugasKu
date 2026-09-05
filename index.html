@@ -29,7 +29,11 @@
         </div>
         <div>
           <h1 class="brand-title">TugasKu</h1>
-          <p class="brand-subtitle">Catat tugas kuliah tanpa ribet</p>
+          <p class="brand-subtitle">Catat tugas kuliah bersama</p>
+          <div class="cloud-status" id="cloudStatus" title="Terhubung ke Firebase Firestore">
+            <span class="status-dot"></span>
+            <span id="statusText">Sinkronisasi Cloud Aktif</span>
+          </div>
         </div>
       </div>
 
@@ -254,6 +258,9 @@
   <!-- Floating Toast Notifications -->
   <div id="toastContainer" class="toast-container"></div>
 
+  <!-- Firebase App & Firestore SDKs (Compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
