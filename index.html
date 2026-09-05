@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TugasKu - Pengingat & List Tugas Kuliah</title>
+  <meta name="description" content="Aplikasi pencatat daftar tugas kuliah yang simpel, elegan, dan mudah digunakan.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Glow Accents -->
+  <div class="bg-decoration glow-1"></div>
+  <div class="bg-decoration glow-2"></div>
+
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">TugasKu</h1>
+          <p class="brand-subtitle">Catat tugas kuliah tanpa ribet</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="themeToggleBtn" class="icon-btn" title="Ganti Mode Gelap/Terang" aria-label="Ganti Tema">
+          <span class="theme-icon sun-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </span>
+          <span class="theme-icon moon-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+        </button>
+
+        <button id="openAddModalBtn" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Tambah Tugas</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Ringkasan Statistik Tugas -->
+    <section class="stats-grid">
+      <div class="stat-card" data-filter="all">
+        <div class="stat-icon icon-indigo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Tugas Aktif</span>
+          <h3 id="statTotal" class="stat-value">0</h3>
+        </div>
+      </div>
+
+      <div class="stat-card" data-filter="urgent">
+        <div class="stat-icon icon-rose">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Mendesak / Hari Ini</span>
+          <h3 id="statUrgent" class="stat-value">0</h3>
+        </div>
+      </div>
+
+      <div class="stat-card" data-filter="upcoming">
+        <div class="stat-icon icon-emerald">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Mendatang</span>
+          <h3 id="statUpcoming" class="stat-value">0</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar: Search & Sorting (Responsive Mobile-Friendly) -->
+    <section class="toolbar">
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Cari judul tugas atau mata kuliah..." autocomplete="off">
+        <button id="clearSearchBtn" class="clear-search hidden" title="Hapus pencarian">&times;</button>
+      </div>
+
+      <div class="toolbar-sort">
+        <label for="sortSelect" class="sort-label">Urutan:</label>
+        <div class="select-container">
+          <select id="sortSelect" class="select-input">
+            <option value="deadline-asc">Deadline Terdekat</option>
+            <option value="deadline-desc">Deadline Terjauh</option>
+            <option value="course-asc">Mata Kuliah (A-Z)</option>
+            <option value="created-desc">Terbaru Ditambahkan</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task List Section -->
+    <main class="task-list-section">
+      <div class="section-heading">
+        <h2 id="sectionTitle">Daftar Tugas</h2>
+        <span id="taskCountBadge" class="badge badge-neutral">0 Tugas</span>
+      </div>
+
+      <div id="taskList" class="task-grid">
+        <!-- Dirender secara dinamis oleh app.js -->
+      </div>
+
+      <!-- Empty State View -->
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-state-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h3 id="emptyTitle">Semua Tugas Sudah Beres!</h3>
+        <p id="emptySubtitle">Tidak ada daftar tugas yang tertunda. Nikmati waktu istirahatmu atau tambahkan tugas baru.</p>
+        <button id="emptyAddBtn" class="btn btn-primary" style="margin-top: 1.25rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Tambah Tugas Baru</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: Tambah / Edit Tugas (Simple & Bersih) -->
+  <div id="taskModal" class="modal-overlay hidden" aria-hidden="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <div class="modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 id="modalTitle" class="modal-title">Tambah Tugas Baru</h3>
+            <p class="modal-subtitle">Isi rincian tugas kuliah yang harus dikerjakan</p>
+          </div>
+        </div>
+        <button id="closeModalBtn" class="modal-close-btn" aria-label="Tutup modal">&times;</button>
+      </div>
+
+      <form id="taskForm" class="modal-form">
+        <input type="hidden" id="taskId">
+
+        <div class="form-group">
+          <label for="taskTitle" class="form-label">
+            Judul Tugas <span class="required-mark">*</span>
+          </label>
+          <input type="text" id="taskTitle" class="form-input" placeholder="Contoh: Makalah Analisis Sistem Informasi" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="courseName" class="form-label">
+            Nama Mata Kuliah <span class="required-mark">*</span>
+          </label>
+          <input type="text" id="courseName" class="form-input" placeholder="Contoh: Rekayasa Perangkat Lunak" required>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDeadline" class="form-label">
+            Deadline (Tenggat Waktu) <span class="required-mark">*</span>
+          </label>
+          <input type="datetime-local" id="taskDeadline" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label for="taskNotes" class="form-label">Catatan Tambahan (Opsional)</label>
+          <textarea id="taskNotes" class="form-input form-textarea" rows="2" placeholder="Link referensi, format submit (PDF), dsb..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary">Batal</button>
+          <button type="submit" id="saveTaskBtn" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span id="saveBtnText">Simpan Tugas</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Konfirmasi Hapus Tugas -->
+  <div id="deleteConfirmModal" class="modal-overlay hidden" aria-hidden="true" role="dialog">
+    <div class="modal-card modal-confirm">
+      <div class="confirm-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <h3 class="confirm-title">Hapus Tugas Ini?</h3>
+      <p id="deleteConfirmText" class="confirm-message">Tugas yang sudah selesai atau tidak diperlukan akan dihapus dari daftar.</p>
+      <div class="modal-actions modal-actions-confirm">
+        <button id="cancelDeleteBtn" class="btn btn-secondary">Batal</button>
+        <button id="confirmDeleteBtn" class="btn btn-danger">Hapus Tugas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
